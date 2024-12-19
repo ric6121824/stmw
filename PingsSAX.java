@@ -228,15 +228,36 @@ public class PingsSAX extends DefaultHandler {
 	}
 
 	private void writeItemsToCSV(){
-		// Implementation
+		try (PrintWriter writer = new PrintWriter(new File("Items.csv"))) {
+			writer.println("ItemID,Name,Currently,Buy_Price,First_Bid,Number_Of_Bids,Location,Latitude,Longitude,Country,Started,Ends,UserID,Description");
+			for (Item item : items) {
+				writer.println(item.toCSV());
+			}
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 	}
 
 	private void writeCategoriesToCSV(){
-		// Implementation
+		try (PrintWriter writer = new PrintWriter(new File("Catecories.csv"))) {
+			writer.println("ItemID,Category");
+			for (Category category : categories) {
+				writer.println(category.toCSV());
+			}
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 	}
 
 	private void writeBidsToCSV(){
-		// Implementation
+		try (PrintWriter writer = new PrintWriter(new File("Bids.csv"))) {
+			writer.println("ItemID,UserID,Time,Amount");
+			for (Bid bid : bids) {
+				writer.println(bid.toCSV());
+			}
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 	}
 	
 	public static void main(String args[]) throws Exception {
