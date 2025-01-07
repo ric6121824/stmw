@@ -1,0 +1,10 @@
+USE asih;
+DROP TABLE IF EXISTS items;
+DROP TABLE IF EXISTS bids;
+DROP TABLE IF EXISTS categories;
+DROP TABLE IF EXISTS buyprice;
+DROP TABLE IF EXISTS locations;
+DROP TABLE IF EXISTS countries;
+DROP TABLE IF EXISTS sellerrating;
+DROP TABLE IF EXISTS buyerrating;
+DROP TABLE IF EXISTS userlatlong;

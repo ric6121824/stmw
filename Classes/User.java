@@ -58,7 +58,7 @@ public class User {
 
     // Helper method to escape special characters
     private String escapeCSV(String value) {
-        if (value == null) {
+        if (value == null || value.isEmpty()) {
             return ""; // Return empty string for null or empty values
         }
         // Escape double quotes and wrap the value in quotes if it contains special characters
@@ -66,6 +66,8 @@ public class User {
             value = value.replace("\"", "\"\""); // Escape internal double quotes
             return "\"" + value + "\"";
         }
+        // System.out.println("Escaping: " + value + " -> " + escapeCSV(value));
+
         return value;
     }
 }

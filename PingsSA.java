@@ -15,11 +15,7 @@
  import javax.xml.parsers.SAXParserFactory;
  import org.xml.sax.*;
  import org.xml.sax.helpers.DefaultHandler;
-
-import Classes.Bid;
-import Classes.Category;
-import Classes.Item;
-import Classes.User;
+ import Classes.*;
 
 
 public class PingsSAX extends DefaultHandler {
@@ -43,7 +39,6 @@ public class PingsSAX extends DefaultHandler {
 
 	public PingsSAX() {
 		super();
-		categoryBuilder = new StringBuilder();
 	}
 
 	/*
@@ -74,7 +69,7 @@ public class PingsSAX extends DefaultHandler {
 	@Override
 	public void startDocument() {
 		System.out.println("Start document");
-		// TODO
+		
 	}
 
 	@Override
@@ -91,11 +86,6 @@ public class PingsSAX extends DefaultHandler {
 		currentElement = qName;
 
 		switch (qName) {
-			case "Category":
-				// categoryBuilder = new StringBuilder();
-				categoryBuilder.setLength(0);
-				System.out.println("Start Element: Category - Cleared categoryBuilder");
-				break;
 			case "Item":
 				currentItem = new Item();
 				currentItem.setItemID(atts.getValue(("ItemID")));
@@ -119,6 +109,9 @@ public class PingsSAX extends DefaultHandler {
 				}
 			case "Country":
 				break;
+			case "Category":
+				categoryBuilder = new StringBuilder();
+				break;
 		}
 
 		// Initialize objects based on element
@@ -129,67 +122,67 @@ public class PingsSAX extends DefaultHandler {
 		for (int i = 0; i < atts.getLength(); i++) {
 			System.out.println("Attribute: " + atts.getLocalName(i) + "=" + atts.getValue(i));
 		}
-		
+
 	}
 
 
 	@Override
 	public void characters(char ch[], int start, int length) {
-		String value = new String(ch, start, length).trim();
-		if (!value.isEmpty()) {
-
-			// Process the element value based on currentElement
-			switch (currentElement) {
-				case "Name":
-					currentItem.setName(value);
-					break;
-				case "Category":
-					if (categoryBuilder != null) {
-						categoryBuilder.append(value);
-						System.out.println("Appending to categoryBuilder: " + value);
-					}
-					// categories.add(new Category(currentItem.getItemID(), value));
-					break;
-				case "Location":
-					if (currentUser != null) {
-						currentUser.setLocation(value);
-					}
-					break;
-				case "Country":
-					if (currentUser != null) {
-						currentUser.setCountry(value);
-					}
-					break;
-				// Add more cases for other elements here
-				default:
-					break;
-			}
+		// Accumulate text for the current element
+		String value = new String(ch, start, length);
+		if (!value.isEmpty()) { // Append only non-empty values
+			categoryBuilder.append(value);
 		} else return;
 
-		// System.out.print("Characters:    \"");
-		// for (int i = start; i < start + length; i++) {
-		// 	switch (ch[i]) {
-		// 		case '\\':
-		// 			System.out.print("\\\\");
-		// 			break;
-		// 		case '"':
-		// 			System.out.print("\\\"");
-		// 			break;
-		// 		case '\n':
-		// 			System.out.print("\\n");
-		// 			break;
-		// 		case '\r':
-		// 			System.out.print("\\r");
-		// 			break;
-		// 		case '\t':
-		// 			System.out.print("\\t");
-		// 			break;
-		// 		default:
-		// 			System.out.print(ch[i]);
-		// 			break;
-		// 	}
-		// }
-		// System.out.print("\"\n");
+		// Process the element value based on currentElement
+		switch (currentElement) {
+			case "Name":
+				if (currentItem != null) {	
+					currentItem.setName(value);
+				}
+				break;
+			case "Category":
+				categoryBuilder.append(value);
+				// categories.add(new Category(currentItem.getItemID(), value));
+				break;
+			case "Location":
+				if (currentUser != null) {
+					currentUser.setLocation(currentUser.getLocation() + value.trim());
+				}
+				break;
+			case "Country":
+				if (currentUser != null) {
+					currentUser.setCountry(currentUser.getCountry() + value.trim());
+				}
+				break;
+			// Add more cases for other elements here
+			
+		}
+
+	// 	System.out.print("Characters:    \"");
+	// 	for (int i = start; i < start + length; i++) {
+	// 		switch (ch[i]) {
+	// 			case '\\':
+	// 				System.out.print("\\\\");
+	// 				break;
+	// 			case '"':
+	// 				System.out.print("\\\"");
+	// 				break;
+	// 			case '\n':
+	// 				System.out.print("\\n");
+	// 				break;
+	// 			case '\r':
+	// 				System.out.print("\\r");
+	// 				break;
+	// 			case '\t':
+	// 				System.out.print("\\t");
+	// 				break;
+	// 			default:
+	// 				System.out.print(ch[i]);
+	// 				break;
+	// 		}
+	// 	}
+	// 	System.out.print("\"\n");
 	}
 
 	
@@ -197,21 +190,14 @@ public class PingsSAX extends DefaultHandler {
 	public void endElement(String uri, String name, String qName) {
 		// Add completed objects to their respective sets
 		switch (qName) {
-			case "Name":
-				if (currentItem != null) {
-					currentItem.setName(categoryBuilder.toString().trim());
-				}
-				break;
 			case "Category":
-				if (currentItem != null && categoryBuilder != null) {
-					String category = categoryBuilder.toString().trim();
-					System.out.println("End Element: Category - Finalized category: " + category);
-					if (!category.isEmpty()) {
+				if (currentItem != null) {
+					String category = categoryBuilder.toString().trim().replaceAll("\\s+", " ");
+					if (!category.isEmpty()){
 						categories.add(new Category(currentItem.getItemID(), category));
-					} 
-				} else {
-					System.out.println("End Element: Category - categoryBuilder was null");
+					}
 				}
+				categoryBuilder = null; // Reset after processing
 				break;
 			case "Item":
 				if (currentItem != null) {
@@ -227,32 +213,38 @@ public class PingsSAX extends DefaultHandler {
 				}
 				break;
 			case "Bid":
-				bids.add(currentBid);
+				if (currentBid != null) {            
+					currentUser.setLocation(currentUser.getLocation().trim().replace("\n", " "));
+					currentUser.setLocation(currentUser.getCountry().trim().replace("\n", " "));
+					bids.add(currentBid);
+					currentBid = null;
+				}
 				break;
 		}
-		if (currentUser == null) {
-			// System.err.println("Error: currentUser is null when processing " + qName);
-			return; // Prevent further execution to avoid crashing.
-		} 
-		else {
-		System.out.println("UserID: " + currentUser.getUserID());
-		System.out.println("Location: " + currentUser.getLocation());
-		System.out.println("Country: " + currentUser.getCountry());
-		}
-		if ("Category".equals(currentElement)) {
-			System.out.println("Accumulated Category Text: " + categoryBuilder.toString());
-		}
+
+
+		
+		// Debugging messages
 		if ("Category".equals(qName)) {
 			System.out.println("Processed Category: " + categoryBuilder.toString().trim());
 		}
-		
-		if ("".equals(uri))
-			System.out.println("End element: " + qName);
-		else
-			System.out.println("End element:   {" + uri + "}" + name);
+		if ("Location".equals(currentElement) || "Country".equals(currentElement)) {
+			if (currentUser != null) {
+				System.out.println(
+					"UserID: " + currentUser.getUserID() +
+					", Location: " + currentUser.getLocation() +
+					", Country: " + currentUser.getCountry());
+			}
+		}		
+
+
+		// if ("".equals(uri))
+		// 	System.out.println("End element: " + qName);
+		// else
+		// 	System.out.println("End element:   {" + uri + "}" + name);
 
 	}
-	
+
 	// Methods to write data to CSV files
 	private void writeUsersToCSV(){
 		try {
@@ -307,7 +299,8 @@ public class PingsSAX extends DefaultHandler {
 			try (PrintWriter writer = new PrintWriter(new File(exportDir,"Catecories.csv"))) {
 				writer.println("ItemID,Category");
 				for (Category category : categories) {
-					writer.println(category.toCSV());
+					String escapedCategory = category.getCategory().replace("\"", "\"\"");
+                	writer.println(category.getItemID() + ",\"" + escapedCategory + "\"");
 				}
 			}
 		} catch (IOException e) {
@@ -327,15 +320,10 @@ public class PingsSAX extends DefaultHandler {
 			try (PrintWriter writer = new PrintWriter(new File(exportDir,"Bids.csv"))) {
 			writer.println("ItemID,UserID,Time,Amount");
 			for (Bid bid : bids) {
-				if (bid != null) {
-					writer.println(bid.toCSV());
-				} else {
-					System.err.println("Warning: Encountered a null bid");
-				}
+				writer.println(bid.toCSV());
 			}
 		}
 		} catch (IOException e) {
-			System.err.println("Error writing bids to CSV: " + e.getMessage());
 			e.printStackTrace();
 		}
 	}
