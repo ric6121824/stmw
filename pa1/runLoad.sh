@@ -1,16 +1,14 @@
 #!/bin/bash
 
-# Run the create.sql batch file to create the database (if it does not exist) and the tables.
-mysql < create.sql
-
 
 # Run the drop.sql batch file to drop existing tables.
 # Inside the drop.sql, you should check whether the table exists. Drop them ONLY if they exist.
-
 mysql < drop.sql
 
-# generating csv files...
+# Run the create.sql batch file to create the database (if it does not exist) and the tables.
+mysql < create.sql
 
+# generating csv files...
 # Compile and run the convertor
 EBAY_DATA="../ebay-data"
 

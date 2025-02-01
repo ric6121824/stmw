@@ -42,3 +42,55 @@ same itemID and quantity (in a 'infinite monkeys on infinite typewriters' approa
 
 4. In addition to the functional dependencies that have already been listed, there are no multivalued dependencies that have been found. Therefore, according to the same line of 
 reasoning as before, the relations are in 4NF.
+
+steps to run:
+1. enter docker(container already created):
+docker exec -it pa1_container bash
+
+1-1. check mysql in the container
+ps aux | grep mysqld
+1-2. install MySQL in the container
+apt-get update
+apt-get install mysql-server
+1-3. start MySQL
+service mysql start
+1-4. restart MySQL
+service mysql restart
+
+2. move directory to student_workspace:
+cd /stmw/student_workspace
+3. run runLoad.sh
+./runLoad.sh
+
+How to edit MySQL config
+1. enter the container
+docker exec -it <container_name_or_id> bash
+2. check config location
+mysql --help | grep -A 1 "Default options"
+3. check which file is being used.
+cat /etc/my.cnf
+cat /etc/mysql/my.cnf
+4. Enter the editing interface of the Appropriate File
+nano /etc/mysql/my.cnf
+5. Add the following lines, save and leave the interface:
+[mysql]
+local_infile=1
+[mysqld]
+local_infile=1
+6. restart MySQL
+service mysql restart
+7. Verify the config
+mysqladmin variables | grep <variable_name>
+
+Create stmw@localhost
+1. in the container, enter MySQL
+mysql -u root -p
+2. check existing users
+SELECT User, Host FROM mysql.user;
+3. create the stmw user:
+CREATE USER 'stmw'@'localhost';
+GRANT ALL PRIVILEGES ON *.* TO 'stmw'@'localhost' WITH GRANT OPTION;
+FLUSH PRIVILEGES;
+4. check again and exit.
+exit;
+
