@@ -17,6 +17,12 @@
 /lucene-10.1.0/
 
 # Skip local environment files (such as temporary build files)
+*.tar
+/lib/
+*/indexes/
+/._*
+*/._*
+*.class
 /*.log
 *.tmp
 *.swp

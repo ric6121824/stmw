@@ -74,7 +74,6 @@ public class PingsSAX extends DefaultHandler {
 	@Override
 	public void startDocument() {
 		System.out.println("Start document");
-		// TODO
 	}
 
 	@Override

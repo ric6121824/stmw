@@ -14,6 +14,8 @@ import org.apache.lucene.search.*;
 import org.apache.lucene.search.similarities.ClassicSimilarity;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
+import org.apache.lucene.store.MMapDirectory;
+import org.apache.lucene.store.NoLockFactory;
 
 import java.io.IOException;
 import java.sql.*;
@@ -24,7 +26,7 @@ import java.nio.file.Paths;
 public class Indexer {
     public static void main(String[] args) throws IOException {
         try {
-            String indexPath = "indexes"; // Path where the index is stored
+            String indexPath = "/stmw/student_workspace/indexes"; // Path where the index is stored
             rebuildIndexes(indexPath);  // Rebuild the index
         } catch (Exception e) {
             e.printStackTrace();
@@ -46,12 +48,13 @@ public class Indexer {
 		try {
 			// Directory for Lucene index
 			Path path = Paths.get(indexPath);
-			//System.out.println("Indexing to directory: " + indexPath);
+			System.out.println("Indexing to directory: " + path.toAbsolutePath());
+			// Create a SimpleFSDirectory instance with the NoLockFactory
 			Directory directory = FSDirectory.open(path);
 
 			// Define analyzer and similarity
 			IndexWriterConfig config = new IndexWriterConfig(new SimpleAnalyzer());
-			config.setSimilarity(new ClassicSimilarity());
+			// config.setSimilarity(new ClassicSimilarity());
 			IndexWriter i = new IndexWriter(directory, config);
 			
 			// Clear existing index
