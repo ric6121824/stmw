@@ -22,3 +22,10 @@
 *.swp
 .DS_Store
 *.bak
+pa2/target/pa2-1.0-SNAPSHOT.jar
+pa2/target/maven-status/maven-compiler-plugin/testCompile/default-testCompile/inputFiles.lst
+pa2/target/maven-status/maven-compiler-plugin/testCompile/default-testCompile/createdFiles.lst
+pa2/target/maven-status/maven-compiler-plugin/compile/default-compile/inputFiles.lst
+pa2/target/maven-status/maven-compiler-plugin/compile/default-compile/createdFiles.lst
+pa2/target/maven-archiver/pom.properties
+pa2/target/classes/com/ptsai/Main.class
