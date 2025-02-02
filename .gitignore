@@ -1,0 +1,24 @@
+# Maven build directory
+/target/
+/.idea/
+/.vscode/
+
+# Eclipse project files (if using Eclipse)
+/.project
+/.classpath
+/.settings/
+
+# IntelliJ IDEA project files (if using IntelliJ)
+/*.iml
+/.idea/
+
+# Skip Lucene index folder (if you have a folder where indexes are stored)
+# Assuming your Lucene index is stored in "lucene-index" or similar directory
+/lucene-10.1.0/
+
+# Skip local environment files (such as temporary build files)
+/*.log
+*.tmp
+*.swp
+.DS_Store
+*.bak

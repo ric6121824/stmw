@@ -5,16 +5,18 @@ import org.apache.lucene.analysis.en.EnglishAnalyzer;
 import org.apache.lucene.analysis.StopwordAnalyzerBase;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.StringField;
+import org.apache.lucene.document.DoublePoint;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.*;
 import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.search.*;
 import org.apache.lucene.search.similarities.ClassicSimilarity;
-import org.apache.lucene.search.Explanation;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 
 import java.io.IOException;
+import java.sql.*;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
@@ -28,23 +30,23 @@ public class Indexer {
             e.printStackTrace();
         }
     }
-	
-	public static void insertDoc(IndexWriter i, String doc_id, String line){
-		Document doc = new Document();
 
-		// Defining fields
-		doc.add(new TextField("doc_id", doc_id, Field.Store.YES));
-		doc.add(new TextField("line", line, Field.Store.YES));
+	// public static void insertDoc(IndexWriter i, String doc_id, String line){
+	// 	Document doc = new Document();
 
-		// Add document
-		try { i.addDocument(doc); } catch (Exception e) { e.printStackTrace(); }
-	}
+	// 	// Defining fields
+	// 	doc.add(new TextField("doc_id", doc_id, Field.Store.YES));
+	// 	doc.add(new TextField("line", line, Field.Store.YES));
+
+	// 	// Add document
+	// 	try { i.addDocument(doc); } catch (Exception e) { e.printStackTrace(); }
+	// }
 	
 	public static void rebuildIndexes(String indexPath) {
 		try {
-			// Directory for the index
+			// Directory for Lucene index
 			Path path = Paths.get(indexPath);
-			System.out.println("Indexing to directory: " + indexPath);
+			//System.out.println("Indexing to directory: " + indexPath);
 			Directory directory = FSDirectory.open(path);
 
 			// Define analyzer and similarity
@@ -54,14 +56,17 @@ public class Indexer {
 			
 			// Clear existing index
 			i.deleteAll();
+
+			// Connect to MySQL and index item datas
+			indexDatabase(i);
 			
 			// Add documents to index
-			insertDoc(i, "1", "The old night keeper keeps the keep in the town");
-			insertDoc(i, "2", "In the big old house in the big old gown.");
-			insertDoc(i, "3", "The house in the town had the big old keep");
-			insertDoc(i, "4", "Where the old night keeper never did sleep.");
-			insertDoc(i, "5", "The night keeper keeps the keep in the night");
-			insertDoc(i, "6", "And keeps in the dark and sleeps in the light.");
+			// insertDoc(i, "1", "The old night keeper keeps the keep in the town");
+			// insertDoc(i, "2", "In the big old house in the big old gown.");
+			// insertDoc(i, "3", "The house in the town had the big old keep");
+			// insertDoc(i, "4", "Where the old night keeper never did sleep.");
+			// insertDoc(i, "5", "The night keeper keeps the keep in the night");
+			// insertDoc(i, "6", "And keeps in the dark and sleeps in the light.");
 
 			//Close writer
 			i.close();
@@ -69,5 +74,41 @@ public class Indexer {
 
 			System.out.println("Indexing finished");
 		} catch (Exception e) { e.printStackTrace(); }
+	}
+
+	public static void indexDatabase(IndexWriter i) throws IOException {
+		// Connecting to MySQL ad database
+		String url = "jdbc:mysql://localhost:3306/ad"; // MySQL server
+		String user = "root"; // Default MySQL user
+		String password = ""; // Default MaSQL password
+
+		String query = 	"SELECT ItemId, Latitude, Longitude FROM ItemLatLon WHERE Latitude IS NOT NULL AND Longitude IS NOT NULL";
+		
+		try (Connection conn = DriverManager.getConnection(url, user, password);
+			 PreparedStatement stmt = conn.prepareStatement(query);
+			 ResultSet rs = stmt.executeQuery()){
+
+				while (rs.next()) {
+					// Read Data
+					String itemId = rs.getString("ItemId");
+					double latitude = rs.getDouble("Latitude");
+					double longitude = rs.getDouble("Longitude");
+					
+					// Create Lucene Document
+					Document doc = new Document();
+
+					// Defining fields
+					doc.add(new TextField("ItemId", itemId, Field.Store.YES));
+					doc.add(new DoublePoint("Latitude", latitude));
+					doc.add(new DoublePoint("Longitude", longitude));
+
+					// Add index
+					i.addDocument(doc);
+				}
+			 } catch (SQLException e) {
+				e.printStackTrace();
+			 }
+
+
 	}
 }
