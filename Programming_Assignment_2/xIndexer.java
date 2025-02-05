@@ -28,10 +28,10 @@ import java.io.*;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
-public class Indexer {
-    public Indexer() {}
+public class xIndexer {
+    public xIndexer() {}
     public static void main(String args[]) {
-		String usage = "java Indexer";
+		String usage = "java xIndexer";
 		rebuildIndexes("indexes");
     }
 
@@ -69,7 +69,7 @@ public class Indexer {
 		try {
 			conn = DbManager.getConnection(true);
 			stmt = conn.createStatement();
-			String qitems = "SELECT item.item_id AS id, item_name, current_price, description, category_name FROM item NATURAL JOIN auction NATURAL JOIN has_category ORDER BY item.item_id;"; //fetching all data in one access, hopefully this improves performance (despite redundant data). ordered by item ID just to be sure they're in order.
+			String qitems = "SELECT Items.ItemId AS id, Name, Currently, Description, Category FROM Items NATURAL JOIN Bids NATURAL JOIN Categories ORDER BY Items.ItemId;"; //fetching all data in one access, hopefully this improves performance (despite redundant data). ordered by item ID just to be sure they're in order.
 			ResultSet ritems = stmt.executeQuery(qitems);
 			int tracker = 0;
 			String trackedID = "-1";
@@ -89,21 +89,21 @@ public class Indexer {
 					stb = new StringBuilder();
 					trackedID = ritems.getString("id");
 					doc.add(new TextField("id", trackedID, Field.Store.YES));
-					String iname = ritems.getString("item_name");
+					String iname = ritems.getString("Name");
 					doc.add(new TextField("name", iname, Field.Store.YES));
 					stb.append(iname);
 					stb.append(" ");
-					stb.append(ritems.getString("description"));
+					stb.append(ritems.getString("Description"));
 					stb.append(" ");
-					doc.add(new TextField("price", ritems.getString("current_price"), Field.Store.YES));
+					doc.add(new TextField("price", ritems.getString("Currently"), Field.Store.YES));
 					/*String iid = ritems.getString("id");
 					String iname = ritems.getString("item_name");
 					String idesc = ritems.getString("description");
 					String iprice = ritems.getString("current_price");*/
-					stb.append(ritems.getString("category_name") + " ");
+					stb.append(ritems.getString("Category") + " ");
 				}
 				else{ //still the same ID/item as before
-					stb.append(ritems.getString("category_name") + " ");
+					stb.append(ritems.getString("Category") + " ");
 				}
 
 				//this was from the first solution attempt, fetching categories separately for each ID. untenable performance!

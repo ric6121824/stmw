@@ -1,2 +1,2 @@
 USE ad;
-DROP TABLE IF EXISTS spatialLocation;
+DROP TABLE IF EXISTS Geocoordinates;

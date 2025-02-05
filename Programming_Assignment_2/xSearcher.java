@@ -33,7 +33,7 @@ import org.apache.lucene.document.Field.Store;
 import java.io.*;
 import java.nio.file.Path;
 
-public class Searcher {
+public class xSearcher {
 
 	final static double distLatDegree = 111.7; //one degree of latitude in km (maximum length for larger bounding box). nabbed from https://en.wikipedia.org/wiki/Latitude#Meridian_distance_on_the_ellipsoid
 	final static double earthRadius = 6371;
@@ -44,7 +44,7 @@ public class Searcher {
 
 	static IndexSearcher indexSearcher;
 
-    public Searcher() {}
+    public xSearcher() {}
     public static void main(String[] args) throws Exception {
 		String usage = "java Searcher";
 		String indexLoc = "indexes";
@@ -64,7 +64,7 @@ public class Searcher {
 		TopDocs topDocs = search(args[0], indexLoc);
 		ArrayList<ItemResult> results = new ArrayList<ItemResult>();
 		for(ScoreDoc sd : topDocs.scoreDocs){
-			Document doc = indexSearcher.doc(sd.doc);
+			Document doc = indexSearcher.storedFields().document(sd.doc);
 			results.add(new ItemResult(Integer.parseInt(doc.get("id")), doc.get("name"), Double.parseDouble(doc.get("price")), sd.score));
 		}
 
@@ -216,7 +216,7 @@ public class Searcher {
 
 
 	private static ResultSet retrieveItemsSpatial(double degLong, double degLat){ //retrieves items within a bounding box from the sql database
-		StringBuilder sQuery = new StringBuilder("SELECT spatialLocation.item_id AS id, latitude, longitude FROM spatialLocation NATURAL JOIN item_coordinates WHERE MBRContains("); //spatial query beginning
+		StringBuilder sQuery = new StringBuilder("SELECT Geocoordinates.item_id AS id, latitude, longitude FROM Geocoordinates NATURAL JOIN ItemLatLon WHERE MBRContains("); //spatial query beginning
 		sQuery.append(buildBoundingBox(x - degLong, x + degLong, y + degLat, y - degLat));
 		sQuery.append(", longlat)");
 
@@ -234,7 +234,7 @@ public class Searcher {
 		//System.out.println(sQuery.toString());
 		try{
 			Connection conn = DbManager.getConnection(true);
-			Statement stmt = conn.createStatement();
+			Statement stmt = conn.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY);
 
 			return stmt.executeQuery(sQuery.toString());
 		} catch (Exception e) {
@@ -244,7 +244,7 @@ public class Searcher {
 	}
 
 	private static String buildBoundingBox(double wLong, double eLong, double tLat, double bLat){ //builds a string representing a polygon in sql to draw bounding boxes. west long, east long, top lat, bottom lat
-		StringBuilder box = new StringBuilder("GeomFromText('Polygon((");
+		StringBuilder box = new StringBuilder("ST_GeomFromText('Polygon((");
 		box.append(wLong);
 		box.append(" ");
 		box.append(tLat);
