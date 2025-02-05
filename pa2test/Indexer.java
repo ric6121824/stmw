@@ -96,9 +96,25 @@ public class Indexer {
 					String name = rs.getString("Name");
 					String description = rs.getString("Description");
 					double currently = rs.getDouble("Currently");
-					// String category = rs.getString("Category");
 					double latitude = rs.getDouble("Latitude");
 					double longitude = rs.getDouble("Longitude");
+
+					// Retrieve all categories for this item
+					String categoryQuery = "SELECT Category FROM Categories WHERE ItemId = ?";
+					PreparedStatement categoryStmt = conn.prepareStatement(categoryQuery);
+					categoryStmt.setString(1, itemId);
+					ResultSet categoryRs = categoryStmt.executeQuery();
+
+					StringBuilder categoriesBuilder = new StringBuilder();
+					while (categoryRs.next()) {
+						if(categoriesBuilder.length() > 0){
+							categoriesBuilder.append(" < "); // Use a delimiter
+						}
+						categoriesBuilder.append(categoryRs.getString("Category"));
+					}
+					categoryStmt.close();
+
+					String categories = categoriesBuilder.toString();
 					
 					// Create Lucene Document
 					Document doc = new Document();
@@ -109,19 +125,19 @@ public class Indexer {
 					doc.add(new TextField("Description", description, Field.Store.YES)); 
 					doc.add(new DoublePoint("Currently", currently));// Index the Currently (price) as a DoublePoint for numeric queries
 					doc.add(new StoredField("Currently", currently));// To store the value so it can be retrieved
-					// doc.add(new TextField("Category", category, Field.Store.YES)); // Index the Category as text for full-text search
 					doc.add(new DoublePoint("Latitude", latitude));
 					doc.add(new DoublePoint("Longitude", longitude));
-					// Store the values for retrieval
-					doc.add(new StoredField("Latitude", latitude));
+					doc.add(new StoredField("Latitude", latitude)); // Store the values for retrieval
 					doc.add(new StoredField("Longitude", longitude));
+					
+					doc.add(new TextField("Category", categories, Field.Store.YES)); // Store all categories in a single field
 
 					// Combine the text fields into a single field for searching across multiple attributes:
-					String searchableText = name + " " + description /* + " " + category */;
+					String searchableText = name + " " + description + " " + categories;
 					doc.add(new TextField("SearchableText", searchableText, Field.Store.NO));
 
 					// Debug print:
-    				// System.out.println("Indexing document: Searchable Texts=" + searchableText);
+    				// System.out.println("Indexing document: Searchable Texts = " + searchableText);
 
 					// Add index
 					i.addDocument(doc);
