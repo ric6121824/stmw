@@ -90,7 +90,7 @@ public class Searcher {
 
 			// Read and prepare query
             SimpleAnalyzer analyzer = new SimpleAnalyzer(); 
-			QueryParser queryParser = new QueryParser("ItemId", analyzer);
+			QueryParser queryParser = new QueryParser("SearchableText", new SimpleAnalyzer());
             Query query = queryParser.parse(searchQuery);
 
 			// Search index (get top results)
@@ -106,14 +106,15 @@ public class Searcher {
             for (ScoreDoc hit : topDocs.scoreDocs) {
                 Document doc = indexSearcher.storedFields().document(hit.doc);
                 String itemId = doc.get("ItemId");
+                String itemName = doc.get("Name");
                 double itemLat = Double.parseDouble(doc.get("Latitude"));
                 double itemLon = Double.parseDouble(doc.get("Longitude"));
-                double price = doc.get("Price") != null ? Double.parseDouble(doc.get("Price")) : 0.0;
+                double price = doc.get("Currently") != null ? Double.parseDouble(doc.get("Currently")) : 0.0;
 
                 double distance = spatialSearch ? haversine(latitude, longitude, itemLat, itemLon) : 0;
 
                 if (!spatialSearch || distance <= width) {
-                    results.add(new SearchResult(itemId, hit.score, distance, price));
+                    results.add(new SearchResult(itemId, itemName, hit.score, distance, price));
                 }
             }
 
@@ -125,7 +126,7 @@ public class Searcher {
 
             // **Print sorted results**
             for (SearchResult r : results){
-                System.out.println("ItemId: " + r.itemId + ", Score: " + r.luceneScore + (spatialSearch ? ", Distance: " + r. distance + " km" : "") + ", Price: " + r.price);
+                System.out.println("ItemId: " + r.itemId + ", ItemName: " + r.itemName + ", Score: " + r.luceneScore + (spatialSearch ? ", Distance: " + r. distance + " km" : "") + ", Price: " + r.price);
             }
             indexReader.close();
             directory.close();
@@ -147,12 +148,14 @@ public class Searcher {
     // **Helper class to store results**
     static class SearchResult {
         String itemId;
+        String itemName;
         double luceneScore;
         double distance;
         double price;
         
-        SearchResult(String itemId, double luceneScore, double distance, double price){
+        SearchResult(String itemId, String itemName, double luceneScore, double distance, double price){
             this.itemId = itemId;
+            this.itemName = itemName;
             this.luceneScore = luceneScore;
             this.distance = distance;
             this.price = price;

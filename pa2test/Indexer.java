@@ -8,6 +8,7 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.DoublePoint;
 import org.apache.lucene.document.TextField;
+import org.apache.lucene.document.StoredField;
 import org.apache.lucene.index.*;
 import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.search.*;
@@ -16,11 +17,13 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.MMapDirectory;
 import org.apache.lucene.store.NoLockFactory;
+import org.apache.lucene.store.NIOFSDirectory;
 
 import java.io.IOException;
 import java.sql.*;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.Files;
 
 
 public class Indexer {
@@ -32,28 +35,32 @@ public class Indexer {
             e.printStackTrace();
         }
     }
-
-	// public static void insertDoc(IndexWriter i, String doc_id, String line){
-	// 	Document doc = new Document();
-
-	// 	// Defining fields
-	// 	doc.add(new TextField("doc_id", doc_id, Field.Store.YES));
-	// 	doc.add(new TextField("line", line, Field.Store.YES));
-
-	// 	// Add document
-	// 	try { i.addDocument(doc); } catch (Exception e) { e.printStackTrace(); }
-	// }
 	
 	public static void rebuildIndexes(String indexPath) {
 		try {
-			// Directory for Lucene index
+			// Create a Path object and ensure the directory exists
 			Path path = Paths.get(indexPath);
+			if (!java.nio.file.Files.exists(path)) {
+				java.nio.file.Files.createDirectories(path);
+			}
 			System.out.println("Indexing to directory: " + path.toAbsolutePath());
-			// Create a SimpleFSDirectory instance with the NoLockFactory
-			Directory directory = FSDirectory.open(path);
+
+			// 1. Create a SimpleFSDirectory instance with the NoLockFactory
+			Directory directory = FSDirectory.open(path/* , NoLockFactory.INSTANCE*/);
+			// // 2. Or set lock factory instead
+			// FSDirectory directory = FSDirectory.open(path);
+        	// directory.setLockFactory(NoLockFactory.INSTANCE);
+			// // 3. Or use MMapDirectory instead
+			// Directory directory = MMapDirectory.open(path);
+			// // 4. Create a NIOFSDirectory with a NoLockFactory
+			// Directory directory = new NIOFSDirectory(path, NoLockFactory.INSTANCE);
+
+			//The NoSuchFileException or AlreadyClosedException issues are resolved by running in Windows, not in Mac.
+
 
 			// Define analyzer and similarity
 			IndexWriterConfig config = new IndexWriterConfig(new SimpleAnalyzer());
+			// config.setUseCompoundFile(false);
 			// config.setSimilarity(new ClassicSimilarity());
 			IndexWriter i = new IndexWriter(directory, config);
 			
@@ -62,14 +69,6 @@ public class Indexer {
 
 			// Connect to MySQL and index item datas
 			indexDatabase(i);
-			
-			// Add documents to index
-			// insertDoc(i, "1", "The old night keeper keeps the keep in the town");
-			// insertDoc(i, "2", "In the big old house in the big old gown.");
-			// insertDoc(i, "3", "The house in the town had the big old keep");
-			// insertDoc(i, "4", "Where the old night keeper never did sleep.");
-			// insertDoc(i, "5", "The night keeper keeps the keep in the night");
-			// insertDoc(i, "6", "And keeps in the dark and sleeps in the light.");
 
 			//Close writer
 			i.close();
@@ -85,7 +84,7 @@ public class Indexer {
 		String user = "root"; // Default MySQL user
 		String password = ""; // Default MaSQL password
 
-		String query = 	"SELECT ItemId, Latitude, Longitude FROM ItemLatLon WHERE Latitude IS NOT NULL AND Longitude IS NOT NULL";
+		String query = 	"SELECT it.ItemId, it.Name, it.Description, it.Currently, geo.Latitude, geo.Longitude FROM Items it INNER JOIN ItemLatLon geo ON it.ItemId = geo.ItemId WHERE geo.Latitude IS NOT NULL AND geo.Longitude IS NOT NULL ORDER BY ItemId;";
 		
 		try (Connection conn = DriverManager.getConnection(url, user, password);
 			 PreparedStatement stmt = conn.prepareStatement(query);
@@ -94,6 +93,10 @@ public class Indexer {
 				while (rs.next()) {
 					// Read Data
 					String itemId = rs.getString("ItemId");
+					String name = rs.getString("Name");
+					String description = rs.getString("Description");
+					double currently = rs.getDouble("Currently");
+					// String category = rs.getString("Category");
 					double latitude = rs.getDouble("Latitude");
 					double longitude = rs.getDouble("Longitude");
 					
@@ -102,8 +105,23 @@ public class Indexer {
 
 					// Defining fields
 					doc.add(new TextField("ItemId", itemId, Field.Store.YES));
+					doc.add(new TextField("Name", name, Field.Store.YES)); // Index the Name and Description as text for full-text search
+					doc.add(new TextField("Description", description, Field.Store.YES)); 
+					doc.add(new DoublePoint("Currently", currently));// Index the Currently (price) as a DoublePoint for numeric queries
+					doc.add(new StoredField("Currently", currently));// To store the value so it can be retrieved
+					// doc.add(new TextField("Category", category, Field.Store.YES)); // Index the Category as text for full-text search
 					doc.add(new DoublePoint("Latitude", latitude));
 					doc.add(new DoublePoint("Longitude", longitude));
+					// Store the values for retrieval
+					doc.add(new StoredField("Latitude", latitude));
+					doc.add(new StoredField("Longitude", longitude));
+
+					// Combine the text fields into a single field for searching across multiple attributes:
+					String searchableText = name + " " + description /* + " " + category */;
+					doc.add(new TextField("SearchableText", searchableText, Field.Store.NO));
+
+					// Debug print:
+    				// System.out.println("Indexing document: Searchable Texts=" + searchableText);
 
 					// Add index
 					i.addDocument(doc);
