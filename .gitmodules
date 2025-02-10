@@ -1,0 +1,3 @@
+[submodule "pa2"]
+	path = pa2
+	url = https://github.com/ric6121824/pa2_stmw.git
